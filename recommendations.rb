@@ -77,3 +77,40 @@ def sim_distance(prefs, person1, person2)
 
 	return 1/(1+Math.sqrt(sum_of_squares))
 end
+
+# Returns the Pearson correlation coefficient for p1 and p2
+def sim_pearson(prefs,p1,p2)
+	# Get the list of mutually rated items
+	si={}
+	
+	prefs[p1].each_key do |key|
+		if prefs[p2].has_key? key
+			si[key] = 1 
+		end 
+	end
+
+	# Find the number of elements
+	n = si.length
+
+	# if they have no ratins in common, return 0
+	return 0 if n==0
+
+	# Add up all the preferences
+	sum1 = si.map{ |k,i| prefs[p1][k] }.inject(:+)
+	sum2 = si.map{ |k,i| prefs[p2][k] }.inject(:+)
+
+	# Sum up the squares
+	sum1Sq = si.map{ |k,i| prefs[p1][k]**2 }.inject(:+)
+	sum2Sq = si.map{ |k,i| prefs[p2][k]**2 }.inject(:+)
+
+	# Sum up the products
+	pSum = si.map{ |k,i| prefs[p1][k]*prefs[p2][k] }.inject(:+)
+
+	# Calculate Pearson score
+	num = pSum-(sum1*sum2/n)
+	den = Math.sqrt(((sum1Sq-(sum1**2))/n)*((sum2Sq-(sum2**2))/n))
+
+	return 0 if den==0
+
+	num/den
+end
