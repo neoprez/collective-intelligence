@@ -50,3 +50,30 @@ $critics = {
 								'Superman Returns' => 4.0, 
 								'You, Me and Dupree' => 1.0 }
 }
+
+# Euclidean distance for similarity score
+
+# Returns a distance-based similarity score for person1 and person2
+def sim_distance(prefs, person1, person2)
+	# Get the list of shared_items
+	si={}
+	
+	prefs[person1].each_key do |key|
+		if prefs[person2].has_key? key
+			si[key] = key
+		end 
+	end
+
+	# if they have no ratins in common, return 0
+	return 0 if si.empty?
+	# Add up the square of all the differences
+	sum_of_squares = 0
+	
+	prefs[person1].each do |key, value| 
+		if prefs[person2].has_key? key
+			sum_of_squares += (value - prefs[person2][key])**2
+		end
+	end
+
+	return 1/(1+Math.sqrt(sum_of_squares))
+end
