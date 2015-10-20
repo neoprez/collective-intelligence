@@ -82,7 +82,7 @@ end
 def sim_pearson(prefs,p1,p2)
 	# Get the list of mutually rated items
 	si={}
-	
+
 	prefs[p1].each_key do |key|
 		if prefs[p2].has_key? key
 			si[key] = 1 
@@ -113,4 +113,15 @@ def sim_pearson(prefs,p1,p2)
 	return 0 if den==0
 
 	num/den
+end
+
+# Returns the best matches for person form the prefs dictionary.
+# Number of results and similarity function are optional params.
+def top_matches(prefs, person, n=5, similarity=method(:sim_pearson))
+	scores = prefs.map{ |other,values| [similarity.call(prefs, person, other),other] if other != person }.compact #compact to remove nil
+
+	# Sort the list so the highest scores appear at the top
+	scores.sort
+	scores.reverse
+	scores[0,n]
 end
