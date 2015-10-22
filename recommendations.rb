@@ -125,3 +125,41 @@ def top_matches(prefs, person, n=5, similarity=method(:sim_pearson))
 	scores.reverse
 	scores[0,n]
 end
+
+# Get s recommmendations for a person by using a weighted average
+# of every other user's rankings
+def get_recommendations(prefs, person, similarity=method(:sim_pearson))
+	totals = {}
+	totals.default = 0
+	sim_sums = {}
+	sim_sums.default = 0
+
+	prefs.each do |other, values|
+		# don't compare me to myself
+		next if other==person
+		sim = similarity.call(prefs, person, other)
+		
+		# ignore scores of zero or lower
+		next if sim <= 0
+
+		prefs[other].each do |movie_name, rating|
+			
+			# only score movies I haven't seen yets
+			if !prefs[person].has_key?(movie_name) || prefs[person][movie_name].nil?
+				# Similarity * Score
+				totals[movie_name] += prefs[other][movie_name] * sim
+				# Sum of similarities
+				sim_sums[movie_name] += sim
+			end
+		end
+	end
+
+	# Create the normalized list
+	rankings = totals.map do |item, total|
+		[total/sim_sums[item], item]
+	end
+
+	# Return the sorted list
+	rankings.sort!
+	rankings.reverse!
+end
