@@ -163,3 +163,14 @@ def get_recommendations(prefs, person, similarity=method(:sim_pearson))
 	rankings.sort!
 	rankings.reverse!
 end
+
+def transform_prefs(prefs)
+	result={}
+	prefs.each do |person, movies|
+		movies.each do |movie, rating|
+			result[movie] = {} if !result.has_key? movie
+			result[movie][person] = rating
+		end
+	end
+	return result
+end
