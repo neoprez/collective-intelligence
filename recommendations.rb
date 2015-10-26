@@ -1,7 +1,8 @@
-# A hash of movie critics and their ratings of a small
-# set of movies
-$critics = { 
-'Lisa Rose' 		=> { 
+module Recommendations
+	# A hash of movie critics and their ratings of a small
+	# set of movies
+	@critics = { 
+	'Lisa Rose' 		=> { 
 								'Lady in the Water' => 2.5, 
 								'Snakes on a Plane' => 3.5, 
 								'Just My Luck' => 3.0, 
@@ -9,7 +10,7 @@ $critics = {
 								'You, Me and Dupree' => 2.5, 
 								'The Night Listener' => 3.0 
 								},
-'Gene Seymour' 	=> { 
+	'Gene Seymour' 	=> { 
 								'Lady in the Water' => 3.0,
 								'Snakes on a Plane' => 3.5,
 								'Just My Luck' => 1.5,
@@ -17,20 +18,20 @@ $critics = {
 								'The Night Listener' => 3.0,
 								'You, Me and Dupree' => 3.5
 								},
-'Michael Phillips' => {
+	'Michael Phillips' => {
 								'Lady in the Water' => 2.5,
 								'Snakes on a Plane' => 3.0,
 								'Superman Returns' => 3.5,
 								'The Night Listener' => 4.0 
 								},
-'Claudia Puig' 	=> {
+	'Claudia Puig' 	=> {
 								'Snakes on a Plane' => 3.5,
 								'Just My Luck' => 3.0,
 								'Superman Returns' => 4.0,
 								'The Night Listener' => 4.5,
 								'You, Me and Dupree' => 2.5
 								},
-'Mick LaSalle'	=> {
+	'Mick LaSalle'	=> {
 								'Lady in the Water' => 3.0, 
 								'Snakes on a Plane' => 4.0, 
 								'Just My Luck' => 2.0, 
@@ -38,139 +39,143 @@ $critics = {
 								'You, Me and Dupree' => 2.0, 
 								'The Night Listener' => 3.0 
 								},
-'Jack Matthews'	=> {
+	'Jack Matthews'	=> {
 								'Lady in the Water' => 3.0, 
 								'Snakes on a Plane' => 4.0, 
 								'Superman Returns' => 5.0, 
 								'You, Me and Dupree' => 3.5, 
 								'The Night Listener' => 3.0 
 								},
-'Toby'					=> {
+	'Toby'					=> {
 								'Snakes on a Plane' => 4.5, 
 								'Superman Returns' => 4.0, 
 								'You, Me and Dupree' => 1.0 }
-}
+	}
 
-# Euclidean distance for similarity score
-
-# Returns a distance-based similarity score for person1 and person2
-def sim_distance(prefs, person1, person2)
-	# Get the list of shared_items
-	si={}
-	
-	prefs[person1].each_key do |key|
-		if prefs[person2].has_key? key
-			si[key] = key
-		end 
+	def self.critics
+		return @critics
 	end
+	# Euclidean distance for similarity score
 
-	# if they have no ratins in common, return 0
-	return 0 if si.empty?
-	# Add up the square of all the differences
-	sum_of_squares = 0
+	# Returns a distance-based similarity score for person1 and person2
+	def self.sim_distance(prefs, person1, person2)
+		# Get the list of shared_items
+		si={}
 	
-	prefs[person1].each do |key, value| 
-		if prefs[person2].has_key? key
-			sum_of_squares += (value - prefs[person2][key])**2
+		prefs[person1].each_key do |key|
+			if prefs[person2].has_key? key
+				si[key] = key
+			end 
 		end
-	end
 
-	return 1/(1+Math.sqrt(sum_of_squares))
-end
-
-# Returns the Pearson correlation coefficient for p1 and p2
-def sim_pearson(prefs,p1,p2)
-	# Get the list of mutually rated items
-	si={}
-
-	prefs[p1].each_key do |key|
-		if prefs[p2].has_key? key
-			si[key] = 1 
-		end 
-	end
-
-	# Find the number of elements
-	n = si.length
-
-	# if they have no ratins in common, return 0
-	return 0 if n==0
-
-	# Add up all the preferences
-	sum1 = si.map{ |k,i| prefs[p1][k] }.inject(:+)
-	sum2 = si.map{ |k,i| prefs[p2][k] }.inject(:+)
-
-	# Sum up the squares
-	sum1Sq = si.map{ |k,i| prefs[p1][k]**2 }.inject(:+)
-	sum2Sq = si.map{ |k,i| prefs[p2][k]**2 }.inject(:+)
-
-	# Sum up the products
-	pSum = si.map{ |k,i| prefs[p1][k]*prefs[p2][k] }.inject(:+)
-
-	# Calculate Pearson score
-	num = pSum-(sum1*sum2/n)
-	den = Math.sqrt(((sum1Sq-(sum1**2))/n)*((sum2Sq-(sum2**2))/n))
-
-	return 0 if den==0
-
-	num/den
-end
-
-# Returns the best matches for person form the prefs dictionary.
-# Number of results and similarity function are optional params.
-def top_matches(prefs, person, n=5, similarity=method(:sim_pearson))
-	scores = prefs.map{ |other,values| [similarity.call(prefs, person, other),other] if other != person }.compact #compact to remove nil
-
-	# Sort the list so the highest scores appear at the top
-	scores.sort
-	scores.reverse
-	scores[0,n]
-end
-
-# Get s recommmendations for a person by using a weighted average
-# of every other user's rankings
-def get_recommendations(prefs, person, similarity=method(:sim_pearson))
-	totals = {}
-	totals.default = 0
-	sim_sums = {}
-	sim_sums.default = 0
-
-	prefs.each do |other, values|
-		# don't compare me to myself
-		next if other==person
-		sim = similarity.call(prefs, person, other)
-		
-		# ignore scores of zero or lower
-		next if sim <= 0
-
-		prefs[other].each do |movie_name, rating|
-			
-			# only score movies I haven't seen yets
-			if !prefs[person].has_key?(movie_name) || prefs[person][movie_name].nil?
-				# Similarity * Score
-				totals[movie_name] += prefs[other][movie_name] * sim
-				# Sum of similarities
-				sim_sums[movie_name] += sim
+		# if they have no ratins in common, return 0
+		return 0 if si.empty?
+		# Add up the square of all the differences
+		sum_of_squares = 0
+	
+		prefs[person1].each do |key, value| 
+			if prefs[person2].has_key? key
+				sum_of_squares += (value - prefs[person2][key])**2
 			end
 		end
+
+		return 1/(1+Math.sqrt(sum_of_squares))
 	end
 
-	# Create the normalized list
-	rankings = totals.map do |item, total|
-		[total/sim_sums[item], item]
-	end
+	# Returns the Pearson correlation coefficient for p1 and p2
+	def self.sim_pearson(prefs,p1,p2)
+		# Get the list of mutually rated items
+		si={}
 
-	# Return the sorted list
-	rankings.sort!
-	rankings.reverse!
-end
-
-def transform_prefs(prefs)
-	result={}
-	prefs.each do |person, movies|
-		movies.each do |movie, rating|
-			result[movie] = {} if !result.has_key? movie
-			result[movie][person] = rating
+		prefs[p1].each_key do |key|
+			if prefs[p2].has_key? key
+				si[key] = 1 
+			end 
 		end
+
+		# Find the number of elements
+		n = si.length
+
+		# if they have no ratins in common, return 0
+		return 0 if n==0
+
+		# Add up all the preferences
+		sum1 = si.map{ |k,i| prefs[p1][k] }.inject(:+)
+		sum2 = si.map{ |k,i| prefs[p2][k] }.inject(:+)
+
+		# Sum up the squares
+		sum1Sq = si.map{ |k,i| prefs[p1][k]**2 }.inject(:+)
+		sum2Sq = si.map{ |k,i| prefs[p2][k]**2 }.inject(:+)
+
+		# Sum up the products
+		pSum = si.map{ |k,i| prefs[p1][k]*prefs[p2][k] }.inject(:+)
+
+		# Calculate Pearson score
+		num = pSum-(sum1*sum2/n)
+		den = Math.sqrt(((sum1Sq-(sum1**2))/n)*((sum2Sq-(sum2**2))/n))
+
+		return 0 if den==0
+
+		num/den
 	end
-	return result
+
+	# Returns the best matches for person form the prefs dictionary.
+	# Number of results and similarity function are optional params.
+	def self.top_matches(prefs, person, n=5, similarity=method(:sim_pearson))
+		scores = prefs.map{ |other,values| [similarity.call(prefs, person, other),other] if other != person }.compact #compact to remove nil
+
+		# Sort the list so the highest scores appear at the top
+		scores.sort
+		scores.reverse
+		scores[0,n]
+	end
+
+	# Get s recommmendations for a person by using a weighted average
+	# of every other user's rankings
+	def self.get_recommendations(prefs, person, similarity=method(:sim_pearson))
+		totals = {}
+		totals.default = 0
+		sim_sums = {}
+		sim_sums.default = 0
+
+		prefs.each do |other, values|
+			# don't compare me to myself
+			next if other==person
+			sim = similarity.call(prefs, person, other)
+		
+			# ignore scores of zero or lower
+			next if sim <= 0
+
+			prefs[other].each do |movie_name, rating|
+			
+				# only score movies I haven't seen yets
+				if !prefs[person].has_key?(movie_name) || prefs[person][movie_name].nil?
+					# Similarity * Score
+					totals[movie_name] += prefs[other][movie_name] * sim
+					# Sum of similarities
+					sim_sums[movie_name] += sim
+				end
+			end
+		end
+
+		# Create the normalized list
+		rankings = totals.map do |item, total|
+			[total/sim_sums[item], item]
+		end
+
+		# Return the sorted list
+		rankings.sort!
+		rankings.reverse!
+	end
+
+	def self.transform_prefs(prefs)
+		result={}
+		prefs.each do |person, movies|
+			movies.each do |movie, rating|
+				result[movie] = {} if !result.has_key? movie
+				result[movie][person] = rating
+			end
+		end
+		return result
+	end
 end
