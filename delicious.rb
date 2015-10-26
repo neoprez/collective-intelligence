@@ -25,7 +25,10 @@ module Delicious
 		return JSON.parse(response)			
 	end	
 
-	def Delicious.get_userposts()
-		
+	def Delicious.get_userposts(user)
+		response = RestClient.get @url + "/#{user}"
+		return JSON.parse(response)	
 	end
+
+	
 end
