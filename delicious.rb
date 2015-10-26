@@ -1,5 +1,6 @@
 require 'rest-client'
 require 'json'
+require 'digest'
 # See https://delicious.com/rss for help
 # Recent bookmarks by tag
 # http://feeds.delicious.com/v2/{format}/tag/{tag[+tag+...+tag]}
@@ -30,5 +31,8 @@ module Delicious
 		return JSON.parse(response)	
 	end
 
-	
+	def Delicious.get_urlposts(post_url)
+		url_digest = Digest::MD5.hexdigest post_url	
+		url_digest = url_digest[0,12]
+	end	
 end
