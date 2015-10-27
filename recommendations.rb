@@ -196,15 +196,15 @@ module Recommendations
 		# Invert Prefs matrix to be item centric
 		item_prefs = self.transform_prefs(prefs)
 		counter = 0
-		item_prefs.each do |item|
-			puts item
+		item_prefs.each do |key,items|
 			# Status updates for large datasets
 			counter += 1
 			puts "#{counter} / #{item_prefs.length}" if counter%100==0
 		
 			#Find the most similar items to this one
-			scores = self.top_matches(item_prefs, item, n=n, similarity=method(:sim_distance))
-			#result[items] = scores
+			#puts key
+			scores = self.top_matches(item_prefs, key, n=n, similarity='sim_distance')
+			result[key] = scores
 		end
 		return result
 	end
