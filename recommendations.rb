@@ -208,4 +208,36 @@ module Recommendations
 		end
 		return result
 	end
+
+	def self.get_recommended_items(prefs, item_match, user)
+		user_ratings = prefs[user]
+		scores = {}
+		scores.default = 0
+		total_sim = {}
+		total_sim.default = 0
+
+		# Loop over items rated by this user
+		user_ratings.each do |key, value|
+			
+			# Loop over items similar to this one
+			item_match[key].each do |value2, key2|
+				
+				# Ignore if this user has already rated this item
+				next if user_ratings.has_key? key2
+				# Weighted sum of rating times	
+				scores[key2] += value2 * value
+
+				# Sum of all the similarities
+				total_sim[key2] += value2
+			end
+		end
+		#Divide each total score by the total weighting to get an average
+		rankings = scores.map do |item, score| 
+			[score/total_sim[item], item]	
+		end
+
+		# Return the rankings from highest to lowest
+		rankings.sort()
+		rankings.reverse()
+	end
 end
