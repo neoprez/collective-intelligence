@@ -133,8 +133,8 @@ module Recommendations
 		scores = prefs.map{ |other,values| [self.similarity(similarity, prefs, person, other),other] if other != person }.compact #compact to remove nil
 
 		# Sort the list so the highest scores appear at the top
-		scores.sort
-		scores.reverse
+		scores.sort!
+		scores.reverse!
 		scores[0,n]
 	end
 
@@ -237,7 +237,33 @@ module Recommendations
 		end
 
 		# Return the rankings from highest to lowest
-		rankings.sort()
-		rankings.reverse()
+		rankings.sort!
+		rankings.reverse!
+	end
+	
+	def self.load_movie_lens(path='./data')
+		# Get movie title
+		movies = {}
+		File.open(path + '/u.item')	do |f|
+			while line = f.gets
+				id,title = line.scrub!.split("|")[0,2]
+				movies[id] = title
+			end
+		end
+
+		# Load data
+		prefs = {}
+		prefs.default = {}
+		File.open(path + '/u.data') do |f|
+			while line = f.gets
+				user,movieid,rating,ts = line.split("\t")	
+
+				if !prefs.has_key? user
+					prefs[user] = {}
+				end
+				prefs[user][movies[movieid]] = rating.to_f
+			end
+		end
+		return prefs
 	end
 end
