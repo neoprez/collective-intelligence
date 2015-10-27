@@ -119,10 +119,18 @@ module Recommendations
 		num/den
 	end
 
+	def self.similarity(sim, prefs, person1, person2)
+		if sim == 'sim_distance'
+			self.sim_distance(prefs, person1, person2)
+		else
+			self.sim_pearson(prefs, person1, person2)
+		end
+	end
+
 	# Returns the best matches for person form the prefs dictionary.
 	# Number of results and similarity function are optional params.
-	def self.top_matches(prefs, person, n=5, similarity=method(:sim_pearson))
-		scores = prefs.map{ |other,values| [similarity.call(prefs, person, other),other] if other != person }.compact #compact to remove nil
+	def self.top_matches(prefs, person, n=5, similarity='sim_pearson')
+		scores = prefs.map{ |other,values| [self.similarity(similarity, prefs, person, other),other] if other != person }.compact #compact to remove nil
 
 		# Sort the list so the highest scores appear at the top
 		scores.sort
@@ -132,7 +140,7 @@ module Recommendations
 
 	# Get s recommmendations for a person by using a weighted average
 	# of every other user's rankings
-	def self.get_recommendations(prefs, person, similarity=method(:sim_pearson))
+	def self.get_recommendations(prefs, person, similarity='sim_pearson')
 		totals = {}
 		totals.default = 0
 		sim_sums = {}
@@ -141,7 +149,7 @@ module Recommendations
 		prefs.each do |other, values|
 			# don't compare me to myself
 			next if other==person
-			sim = similarity.call(prefs, person, other)
+			sim = self.similarity(similarity, prefs, person, other)
 		
 			# ignore scores of zero or lower
 			next if sim <= 0
@@ -175,6 +183,28 @@ module Recommendations
 				result[movie] = {} if !result.has_key? movie
 				result[movie][person] = rating
 			end
+		end
+		return result
+	end
+
+	# Item based filtering
+	def self.calculate_similar_items(prefs, n=10)
+		# Create a dictionary of items showing which other
+		# items they are more simlar to
+		result = {}
+	
+		# Invert Prefs matrix to be item centric
+		item_prefs = self.transform_prefs(prefs)
+		counter = 0
+		item_prefs.each do |item|
+			puts item
+			# Status updates for large datasets
+			counter += 1
+			puts "#{counter} / #{item_prefs.length}" if counter%100==0
+		
+			#Find the most similar items to this one
+			scores = self.top_matches(item_prefs, item, n=n, similarity=method(:sim_distance))
+			#result[items] = scores
 		end
 		return result
 	end
