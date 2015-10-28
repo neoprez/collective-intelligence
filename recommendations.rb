@@ -122,6 +122,8 @@ module Recommendations
 	def self.similarity(sim, prefs, person1, person2)
 		if sim == 'sim_distance'
 			self.sim_distance(prefs, person1, person2)
+		elsif sim == 'sim_tanimoto'
+			self.sim_tanimoto(prefs, person1, person2)
 		else
 			self.sim_pearson(prefs, person1, person2)
 		end
@@ -150,7 +152,6 @@ module Recommendations
 			# don't compare me to myself
 			next if other==person
 			sim = self.similarity(similarity, prefs, person, other)
-		
 			# ignore scores of zero or lower
 			next if sim <= 0
 
@@ -277,15 +278,39 @@ module Recommendations
 		# Get the matching attributes (union)
 		prefs[p1].each do |key, value|
 			next if !prefs[p2].has_key? key
-			sim_int[key] = 1 if prefs[p2][key] == value
+			sim_int[key] = 1 if prefs[p2][key] == 1 && value == 1
 		end
 
 		# Get the union (matching plus non-matching)
-		sim_union = prefs[p1].merge(prefs[p2])
+		#sim_union = prefs[p1].merge(prefs[p2])
+		prefs[p1].each do |key,value|
+			if !prefs[p2].has_key? key
+				next
+			end
+			
+			sim_union[key] = 1 if prefs[p2][key] != value
+		end
 		
 		# if both empty it means they are equal
 		return 1 if sim_int.empty? && sim_union.empty?
+		return sim_int.length.to_f/(sim_union.length.to_f + sim_int.length.to_f)
+	end
 
-		return sim_int.length.to_f/sim_union.length.to_f
+	# load cars mostly for tanimoto score data in the keys is 0 or 1
+	def self.load_cars(path="./04cars.dat.txt")
+		keys = ["sports car", "sport utility", "wagon", "minivan", "pickup", "all-wheel", "rear-wheel"]
+
+		cars = {}
+		File.open(path) do |f|
+			while line = f.gets
+				car_name = line[0,45].strip!
+				cars[car_name] = {} #name of car
+				values = line[46,14].strip!.split(" ")
+				keys.each_index do |k|
+					cars[car_name][keys[k]] = values[k].to_i
+				end
+			end
+		end
+		cars
 	end
 end
