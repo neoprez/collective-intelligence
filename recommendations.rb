@@ -266,4 +266,26 @@ module Recommendations
 		end
 		return prefs
 	end
+
+	# When dealing with data objects that have binary 
+	# attributes, it is more effective to calculate similarity 
+	# using a Jaccard Coefficient.
+	def self.sim_tanimoto(prefs, p1, p2)
+		sim_int = {}
+		sim_union = {}
+
+		# Get the matching attributes (union)
+		prefs[p1].each do |key, value|
+			next if !prefs[p2].has_key? key
+			sim_int[key] = 1 if prefs[p2][key] == value
+		end
+
+		# Get the union (matching plus non-matching)
+		sim_union = prefs[p1].merge(prefs[p2])
+		
+		# if both empty it means they are equal
+		return 1 if sim_int.empty? && sim_union.empty?
+
+		return sim_int.length.to_f/sim_union.length.to_f
+	end
 end
