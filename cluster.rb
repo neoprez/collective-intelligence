@@ -43,4 +43,15 @@ module Cluster
 	
 		return 1.0-num/den
 	end
+
+	class Bicluster
+		def initialize(vec,left=nil,right=nil,distance=0.0,id=nil)
+			@left = left
+			@right = right
+			@vec = vec
+			@id = id
+			@distance = distance
+		end	
+	end
 end
+
